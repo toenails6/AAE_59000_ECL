@@ -33,7 +33,7 @@ classdef lab1EKF < handle
                 sum(u, 'all')/2*sin(obj.x(3)); ...
                 (-u(1)+u(2))/obj.L]*obj.T; 
             
-            % Update covariance with process noise
+            % Covariance prediction with process noise
             F = eye(3); 
             F(1:2, 3) = [
                 -sum(u, 'all')/2*sin(obj.x(3)); ...
