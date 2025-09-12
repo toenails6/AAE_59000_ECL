@@ -24,7 +24,7 @@ classdef lab1EKF < handle
             obj.R = R; % Set measurement noise covariance
         end
 
-        function retval = update(obj, u, z)
+        function [retvalx, retvalP] = update(obj, u, z)
             % EKF update method. 
 
             % State prediction with control input
@@ -50,7 +50,8 @@ classdef lab1EKF < handle
             K = obj.P * H.' / S; % Kalman gain
             obj.x = obj.x + K * y; % Update state estimate
             obj.P = (eye(3) - K * H) * obj.P; % Update covariance estimate
-            retval = obj.x; % Return the updated state estimate
+            retvalx = obj.x; % Return the updated state estimate
+            retvalP = obj.P;
         end
     end
 end
