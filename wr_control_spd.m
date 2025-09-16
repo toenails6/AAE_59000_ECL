@@ -6,27 +6,33 @@ function [wr] = wr_control_spd(wr, time)
     %PWMR =0;
 
     % setting the PWM limits, keep the codes here
-    P_gain = 1;  
-    I_gain = 1;
-    D_gain = 1;
+    P_gain = 0.4;  
+    I_gain = 0.0;
+    D_gain = 2;
 
     delta_pos = wr.pos - wr.pos_old; 
-    disp = dot(delta_pos, wr.heading_vec); 
-    meas_spd = disp / time.dt; 
+    meas_spd = norm(delta_pos)/time.dt;
+    disp("Measured Speed: "); 
+    disp(meas_spd); 
+%     disp("Displacement: "); 
+%     disp(disp1); 
+%     meas_spd = disp1 / time.dt; 
     speed_error = wr.forward_spd - meas_spd;
 
-    persistent int_err prev_err
-    if isempty(int_err)
-        int_err = 0;
+    % Update position history. 
+    wr.pos_old = wr.pos; 
+
+    if ~isfield(wr, "prev_err")
+        wr.prev_err = 0;
     end
-    if isempty(prev_err)
-        prev_err = 0;
+    if ~isfield(wr, "int_err")
+        wr.int_err = 0;
     end
 
-    int_err = int_err + speed_error * time.dt;
-    d_err = (speed_error - prev_err) / time.dt;
-    pwm_cmd = P_gain * speed_error + I_gain * int_err + D_gain * d_err;
-    prev_err = speed_error;
+    wr.int_err = wr.int_err + speed_error * time.dt;
+    d_err = (speed_error - wr.prev_err) / time.dt;
+    pwm_cmd = P_gain * speed_error + I_gain * wr.int_err + D_gain * d_err;
+    wr.prev_err = speed_error;
 
     PWML = pwm_cmd;
     PWMR = pwm_cmd;
