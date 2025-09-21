@@ -11,28 +11,41 @@ function [wr] = wr_control_spd(wr, time)
     K_I = 0.0;
     K_D = 2;
 
+    % Create PID controller data buffers. 
+    if ~isfield(wr, "PID_prev_err")
+        wr.PID_prev_err = 0;
+    end
+    if ~isfield(wr, "PID_integral")
+        wr.PID_integral = 0;
+    end
+
     %% PID controller implementation. 
     % Proportion error. 
     meas_spd = norm(wr.pos - wr.pos_old)/time.dt; 
     error = wr.forward_spd - meas_spd;
 
     % Integral and integral clamping. 
-    integral = integral + error * Ts;  
-    integral = min(max(integral, 0), 150); 
+    wr.PID_integral = wr.PID_integral + error * time.dt;  
+    wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
 
     % Derivative. 
-    derivative = (error - prev_error) / Ts;
+    derivative = (error - wr.PID_prev_err) / time.dt;
 
-    % Update/Record error history. 
-    prev_error = error;
+    % Update error history. 
+    wr.PID_prev_err = error;
 
-    % PID controller output. 
-    u = K_P * error + K_I * integral + K_D * derivative;
+    % Update position history. 
+    wr.pos_old = wr.pos; 
 
-    %% Enforce limits and push control outputs to data struct. 
+    % Assemble PID controller output. 
+    u = K_P * error + K_I * wr.PID_integral + K_D * derivative; 
+
+    % Assign output values. 
     % Equal control efforts on both sides for straight velocity control. 
     PWML = u; 
     PWMR = u; 
+
+    %% Enforce limits and push control outputs to data struct. 
     PWML = min(150, PWML);
     wr.PWML = uint8(max(0, PWML));
     PWMR = min(150, PWMR);
