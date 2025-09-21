@@ -1,5 +1,6 @@
 function [wr] = wr_control_spd(wr, time)
-   % Defalut values for straight velocity control. 
+    %% Settings. 
+    % Defalut values for straight velocity control. 
     wr.DIRL = 1;
     wr.DIRR = 1;
     % PWML = 0;
@@ -10,10 +11,8 @@ function [wr] = wr_control_spd(wr, time)
     K_I = 0.0;
     K_D = 2;
 
-    % PID controller implementation. 
+    %% PID controller implementation. 
     % Proportion error. 
-    % delta_pos = wr.pos - wr.pos_old; 
-    % meas_spd = norm(delta_pos)/time.dt;
     meas_spd = norm(wr.pos - wr.pos_old)/time.dt; 
     error = wr.forward_spd - meas_spd;
 
@@ -30,7 +29,7 @@ function [wr] = wr_control_spd(wr, time)
     % PID controller output. 
     u = K_P * error + K_I * integral + K_D * derivative;
 
-    % Enforce limits and push control outputs to data struct. 
+    %% Enforce limits and push control outputs to data struct. 
     % Equal control efforts on both sides for straight velocity control. 
     PWML = u; 
     PWMR = u; 
