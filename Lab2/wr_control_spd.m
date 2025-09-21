@@ -25,20 +25,20 @@ function [wr] = wr_control_spd(wr, time)
     error = wr.forward_spd - meas_spd;
 
     % Integral and integral clamping. 
-    wr.PID_integral = wr.PID_integral + error * time.dt;  
+    wr.PID_integral = wr.PID_integral + error*time.dt;  
     wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
 
     % Derivative. 
     derivative = (error - wr.PID_prev_err) / time.dt;
+
+    % Assemble PID controller output. 
+    u = K_P * error + K_I * wr.PID_integral + K_D * derivative; 
 
     % Update error history. 
     wr.PID_prev_err = error;
 
     % Update position history. 
     wr.pos_old = wr.pos; 
-
-    % Assemble PID controller output. 
-    u = K_P * error + K_I * wr.PID_integral + K_D * derivative; 
 
     % Assign output values. 
     % Equal control efforts on both sides for straight velocity control. 
