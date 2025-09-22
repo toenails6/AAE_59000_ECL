@@ -62,7 +62,7 @@ function wr = wr_control_wp(wr, time)
 
     wr.PIDh_integral = wr.PIDh_integral + ang_err*time.dt;
     wr.PIDh_integral = min(max(wr.PIDh_integral, -150), 150);
-    d_ang = (ang_err - wr.PIDh_prev_err) / max(time.dt,1e-3);
+    d_ang = (ang_err - wr.PIDh_prev_err) / time.dt;
     u_turn = Kp_h*ang_err + Ki_h*wr.PIDh_integral + Kd_h*d_ang;
     wr.PIDh_prev_err = ang_err;
     u_turn = max(-steer_max, min(steer_max, u_turn));
