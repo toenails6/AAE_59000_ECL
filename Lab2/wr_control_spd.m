@@ -7,9 +7,16 @@ function [wr] = wr_control_spd(wr, time)
     % PWMR = 0;
 
     % PID gains. 
-    K_P = 0.4;  
-    K_I = 0.0;
-    K_D = 2;
+    % Note here that I suggest manually tuning K_P, simply feel it, I might
+    % very likely tune this myself. 
+    % I suggest to begin with a small integral gain K_I. 
+    % I suggest likely relatively moderate (higher than K_I) K_D. 
+    % Error in this controller can be negative, which might create
+    % oscillations, but higher K_D can help alleviate that. 
+    % Error has units of mm/s. 
+    K_P = 1;  
+    K_I = 0.01;
+    K_D = 0.1;
 
     % Create PID controller data buffers. 
     if ~isfield(wr, "PID_prev_err")
