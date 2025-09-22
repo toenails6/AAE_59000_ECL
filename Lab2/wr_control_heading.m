@@ -1,7 +1,7 @@
 function [wr] = wr_control_heading(wr, time)
     %% Settings. 
     % Defalut values for zero-radius heading control. 
-    wr.DIRL = 1;
+    wr.DIRL = 0;
     wr.DIRR = 1;
     % PWML = 0;
     % PWMR = 0;
@@ -18,12 +18,16 @@ function [wr] = wr_control_heading(wr, time)
     end
 
     %% PID controller implementation. 
-    % Proportion error with tolerance margin and calibration offset. 
+    % Heading vectors and rotation direction processing. 
     heading_unitVec = wr.heading_vec.'/norm(wr.heading_vec); 
     heading_unitDir = wr.heading_dir.'/norm(wr.heading_dir); 
     heading_sign = sign(...
         heading_unitVec(1)*heading_unitDir(2) - ...
         heading_unitVec(2)*heading_unitDir(1)); 
+    wr.DIRL = sign < 0;
+    wr.DIRR = sign > 0;
+
+    % Proportion error with tolerance margin and calibration offset. 
     delta_theta = heading_sign * ...
         acos(dot(heading_unitVec, heading_unitDir)) + ...
         theta_offset; 
