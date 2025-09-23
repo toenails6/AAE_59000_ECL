@@ -113,7 +113,7 @@ tic
 while(disable < 1)
     wr.disable = disable; 
     time.curr = toc;  
-    time.dt = time.curr - time.old;
+    time.dt = time.curr - time.old; % WAR CRIME BEHAVIOR. 
     wr.i2 = wr.i2 + 1;
     wr.i1 = 1;
     if wr.i2>5
