@@ -2,14 +2,10 @@ function [wr] = wr_control_spd(wr, time)
 % Defalut values for straight velocity control. 
 wr.DIRL = 1;
 wr.DIRR = 1;
+
+% Disregard missing measurements from MOCAP. 
 if ~isnan(wr.pos(1)) 
     %% Settings. 
-    % Defalut values for straight velocity control. 
-    wr.DIRL = 1;
-    wr.DIRR = 1;
-    % PWML = 0;
-    % PWMR = 0;
-
     % PID gains. 
     % Note here that I suggest manually tuning K_P, simply feel it, I might
     % very likely tune this myself. 
@@ -37,11 +33,11 @@ if ~isnan(wr.pos(1))
 
     % Integral and integral clamping. 
     wr.PID_integral = wr.PID_integral + error*time.dt;  
-%     wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
+    % wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
 
     % Derivative. 
     derivative = (error - wr.PID_prev_err) / time.dt;
-%     derivative = min(max(derivative, -150), 150); 
+    % derivative = min(max(derivative, -150), 150); 
 
     % Assemble PID controller output. 
     u = K_P * error + K_I * wr.PID_integral + K_D * derivative; 
@@ -74,8 +70,8 @@ if ~isnan(wr.pos(1))
     disp("Integral: "); 
     disp(wr.PID_integral);
 
-%     disp("Derivative: "); 
-%     disp(derivative);
+    disp("Derivative: "); 
+    disp(derivative);
 
     disp("--------------------------------"); 
     
