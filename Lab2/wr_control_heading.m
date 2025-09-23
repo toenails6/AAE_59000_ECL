@@ -44,11 +44,11 @@ function [wr] = wr_control_heading(wr, time)
     error = (abs(delta_theta) > deg2rad(2)) * delta_theta;
 
     % Integral and integral clamping. 
-    wr.PID_integral = wr.PID_integral + error*time.dt;  
+    wr.PID_integral = wr.PID_integral + error*dtFilter(time.det);  
     wr.PID_integral = min(max(wr.PID_integral, -90), 90); 
 
     % Derivative. 
-    derivative = (error - wr.PID_prev_err) / time.dt;
+    derivative = (error - wr.PID_prev_err) / dtFilter(time.det);
     derivative = min(max(derivative, -150), 150); 
 
     % Assemble PID controller output. 

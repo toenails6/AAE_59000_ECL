@@ -28,15 +28,15 @@ if ~isnan(wr.pos(1))
 
     %% PID controller implementation. 
     % Proportion error. 
-    meas_spd = norm(wr.pos - wr.pos_old)/time.dt; 
+    meas_spd = norm(wr.pos - wr.pos_old)/dtFilter(time.det); 
     error = wr.forward_spd - meas_spd;
 
     % Integral and integral clamping. 
-    wr.PID_integral = wr.PID_integral + error*time.dt;  
+    wr.PID_integral = wr.PID_integral + error*dtFilter(time.det);  
     % wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
 
     % Derivative. 
-    derivative = (error - wr.PID_prev_err) / time.dt;
+    derivative = (error - wr.PID_prev_err) / dtFilter(time.det);
     % derivative = min(max(derivative, -150), 150); 
 
     % Assemble PID controller output. 
