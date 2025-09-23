@@ -1,92 +1,68 @@
-function wr = wr_control_wp(wr, time)
-    persistent WP numWP
-    if isempty(WP)
-        file  = 'Rover_wp_lab2.xlsx';
-        sheet = 'white_rover';
-        WP = readmatrix(file,'Sheet',sheet);
-        WP = WP(:,1:2);
-        numWP = size(WP,1);
-    end
+function [wr] = wr_control_wp(wr, time)
 
-    if wr.curWP > numWP
-        wr.DIRL=1;
-        wr.DIRR=1;
-        wr.PWML=uint8(0);
-        wr.PWMR=uint8(0);
+    if wr.curWP > size(wr.WP,1)
+        % no more waypoints: stop
+        wr.PWML = uint8(0);
+        wr.PWMR = uint8(0);
         return
     end
 
-    wp   = WP(wr.curWP,1:2);
-    dist = norm(wp(:) - wr.pos(:));
-
-    if dist < wr.dist_mar
-        wr.curWP = wr.curWP + 1;
+    if ~isfield(wr, "heading_dir")
+        wr.heading_dir = [0,0];
     end
 
-    % heading error
-    v = wr.heading_vec.'/norm(wr.heading_vec);
-    d = wr.heading_dir.'/norm(wr.heading_dir);
-    a = acos(max(-1,min(1, dot(v,d))));
-    s = v(1)*d(2) - v(2)*d(1);
-    ang_err = sign(s)*a;
-    if abs(ang_err) < deg2rad(wr.fwd_deg)
-        ang_err = 0;
-    end
+    target = wr.WP(wr.curWP,:).';  % 2x1 target point
 
-    if ~isfield(wr,'PIDv_prev_err')
-        wr.PIDv_prev_err = 0;
-    end
-    if ~isfield(wr,'PIDv_integral')
-        wr.PIDv_integral = 0;
-    end
-    if ~isfield(wr,'PIDh_integral')
-        wr.PIDh_integral = 0;
-    end
-    if ~isfield(wr,'PIDh_prev_err')
-        wr.PIDh_prev_err = 0;
-    end
+    % --- Compute desired heading vector toward target ---
+    vec_to_wp = target' - wr.pos;           % 2x1 vector
+    dist_to_wp = norm(vec_to_wp);          % distance to waypoint
+    desired_heading = vec_to_wp / dist_to_wp; % unit vector toward WP
+    disp(target)
+    disp(wr.pos)
+    % Update desired heading in wr
 
-    % forward speed
-    Kp_v=0.40; Ki_v=0.00; Kd_v=2.0;
+    wr.heading_dir = desired_heading;
 
-    meas_spd = norm(wr.pos - wr.pos_old)/time.dt;
-    error = wr.forward_spd - meas_spd;
-    wr.PIDv_integral = wr.PIDv_integral + error*time.dt;
-    wr.PIDv_integral = min(max(wr.PIDv_integral, -150), 150);
-    derivative = (error - wr.PIDv_prev_err) / time.dt;
-    u_f = Kp_v*error + Ki_v*wr.PIDv_integral + Kd_v*derivative;
-    wr.PIDv_prev_err = error;
+    % --- Compute heading error in degrees ---
+    % Heading vectors and rotation direction processing. 
+    % Counter-clockwise as positive heading rotation direction. 
+    % Heading rotation direction, heading_sign, is used to control the
+    % direction of the rover's rotation, through the wr.DIR* registers.
+    hv = wr.heading_vec.'/norm(wr.heading_vec); 
+    dv = wr.heading_dir.'/norm(wr.heading_dir); 
+    angle_err = acos(dot(hv, dv));
+    angle_err = rad2deg(angle_err);
 
-    % heading
-    Kp_h=90; Ki_h=0.00; Kd_h=0.0;
-
-    wr.PIDh_integral = wr.PIDh_integral + ang_err*time.dt;
-    wr.PIDh_integral = min(max(wr.PIDh_integral, -150), 150);
-    d_ang = (ang_err - wr.PIDh_prev_err) / time.dt;
-    u_turn = Kp_h*ang_err + Ki_h*wr.PIDh_integral + Kd_h*d_ang;
-    wr.PIDh_prev_err = ang_err;
-    u_turn = max(-steer_max, min(steer_max, u_turn));
-
-    L = u_f - u_turn;
-    R = u_f + u_turn;
-
-    if L >= 0
-        wr.DIRL = 1;
-        Lp = min(150,round(L));
+    % sign of error (left vs. right)
+    cross_val = hv(1)*dv(2) - hv(2)*dv(1);
+    if cross_val > 0
+        sign_err = +1;
     else
-        wr.DIRL = 0;
-        Lp = min(150,round(-L));
+        sign_err = -1;
     end
-    if R >= 0
-        wr.DIRR = 1;
-        Rp = min(150,round(R));
+    heading_error = sign_err * angle_err;
+
+    % --- Waypoint reached? ---
+    if dist_to_wp < wr.dist_mar
+        wr.curWP = wr.curWP + 1;  % go to next waypoint
+        if wr.curWP > size(wr.WP,1)
+            % finished all waypoints
+            wr.PWML = uint8(0);
+            wr.PWMR = uint8(0);
+            return
+        else
+            % new target
+            target = wr.WP(wr.curWP,:).';
+        end
+    end
+
+    % --- Decide mode: heading control or speed control ---
+    if abs(heading_error) > wr.fwd_deg
+        % rotate first: call heading controller
+        wr = wr_control_heading(wr, time); 
     else
-        wr.DIRR = 0;
-        Rp = min(150,round(-R));
+        % heading good: move forward with speed control
+        wr.forward_spd = wr.forward_spd; % ensure forward speed is set
+        wr = wr_control_spd(wr, time);
     end
-
-    wr.PWML = uint8(max(0,Lp));
-    wr.PWMR = uint8(max(0,Rp));
-
-    wr.pos_old = wr.pos;
 end

@@ -1,4 +1,8 @@
 function [wr] = wr_control_spd(wr, time)
+% Defalut values for straight velocity control. 
+wr.DIRL = 1;
+wr.DIRR = 1;
+if ~isnan(wr.pos(1)) 
     %% Settings. 
     % Defalut values for straight velocity control. 
     wr.DIRL = 1;
@@ -14,9 +18,9 @@ function [wr] = wr_control_spd(wr, time)
     % Error in this controller can be negative, which might create
     % oscillations, but higher K_D can help alleviate that. 
     % Error has units of mm/s. 
-    K_P = 1;  
-    K_I = 0.01;
-    K_D = 0.1;
+    K_P = 0.08;  
+    K_I = 0.3;
+    K_D =0.02;
 
     % Create PID controller data buffers. 
     if ~isfield(wr, "PID_prev_err")
@@ -33,10 +37,11 @@ function [wr] = wr_control_spd(wr, time)
 
     % Integral and integral clamping. 
     wr.PID_integral = wr.PID_integral + error*time.dt;  
-    wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
+%     wr.PID_integral = min(max(wr.PID_integral, -150), 150); 
 
     % Derivative. 
     derivative = (error - wr.PID_prev_err) / time.dt;
+%     derivative = min(max(derivative, -150), 150); 
 
     % Assemble PID controller output. 
     u = K_P * error + K_I * wr.PID_integral + K_D * derivative; 
@@ -52,9 +57,32 @@ function [wr] = wr_control_spd(wr, time)
     PWML = u; 
     PWMR = u; 
 
+    % Tuning display. 
+    disp("--------------------------------"); 
+    disp("Output: "); 
+    disp(u); 
+
+    disp("Error: "); 
+    disp(error);
+
+    disp("Current position: "); 
+    disp(norm(wr.pos));
+
+    disp("Measured speed: "); 
+    disp(meas_spd);
+
+    disp("Integral: "); 
+    disp(wr.PID_integral);
+
+%     disp("Derivative: "); 
+%     disp(derivative);
+
+    disp("--------------------------------"); 
+    
     %% Enforce limits and push control outputs to data struct. 
     PWML = min(150, PWML);
     wr.PWML = uint8(max(0, PWML));
     PWMR = min(150, PWMR);
     wr.PWMR = uint8(max(0, PWMR));
+end
 end

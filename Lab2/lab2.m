@@ -6,7 +6,7 @@ clear all;clc; close all
 prompt_box = {'Enter Testing Mode: (heading, speed, waypoint)', 'Enter the Speed of the Rover (mm/s)   min: 70, max: 200'};
 dlgtitle = 'Rover Commands';
 dims = [1 70];
-definput = {'0', '0'};
+definput = {'speed', '100'};
 answer = inputdlg(prompt_box,dlgtitle,dims,definput);
 check = 0;
 
@@ -172,9 +172,9 @@ while(disable < 1)
     % data saving, more data can be added to here
     % Add data to data_to_log and redefine the first row of csv file
     %----------------------------------------------------------------------
-    data_to_log = [double(time.curr), double(wr.pos(1)), double(wr.pos(2))];
+    data_to_log = [double(time.curr), double(wr.pos(1)), double(wr.pos(2)), double(wr.spd), double(wr.spd_avg)];
     if loop == 1
-        fprintf(fid, ['time[s], wr_x[mm], wr_y[mm] \n']);
+        fprintf(fid, ['time[s], wr_x[mm], wr_y[mm], spd, spd_avg \n']);
     %----------------------------------------------------------------------
         format_string = '';
         for i=1:1:length(data_to_log)

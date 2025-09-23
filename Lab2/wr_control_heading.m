@@ -6,11 +6,15 @@ function [wr] = wr_control_heading(wr, time)
     % PWML = 0;
     % PWMR = 0;
 
+    K_P = 100;
+    K_I = 10;
+    K_D = 10;
+
     % Rover heading angle calibration offset. 
     % This is in case that the QTM given current heading is not fully
     % aligned with the rover's physical heading. 
     % Use units in degrees here. 
-    theta_offset = 0; 
+    theta_offset = 4; 
 
     % Create PID controller data buffers. 
     if ~isfield(wr, "PID_prev_err")
@@ -37,7 +41,7 @@ function [wr] = wr_control_heading(wr, time)
     % There will be no negative error values here. 
     delta_theta = acos(dot(heading_unitVec, heading_unitDir)) + ...
         deg2rad(theta_offset); 
-    error = (abs(delta_theta) > deg2rad(15)) * delta_theta;
+    error = (abs(delta_theta) > deg2rad(2)) * delta_theta;
 
     % Integral and integral clamping. 
     wr.PID_integral = wr.PID_integral + error*time.dt;  
@@ -45,6 +49,7 @@ function [wr] = wr_control_heading(wr, time)
 
     % Derivative. 
     derivative = (error - wr.PID_prev_err) / time.dt;
+    derivative = min(max(derivative, -150), 150); 
 
     % Assemble PID controller output. 
     u = K_P * error + K_I * wr.PID_integral + K_D * derivative; 
@@ -60,6 +65,28 @@ function [wr] = wr_control_heading(wr, time)
     % But position history does not seem to be updated in the loop though. 
     % Current position, like current heading, seems to be updated in the
     % loop. 
+
+    % Tuning display. 
+    disp("--------------------------------"); 
+    disp("Current heading: "); 
+    disp(heading_unitVec); 
+
+    disp("Delta Theta: "); 
+    disp(rad2deg(delta_theta)); 
+
+    disp("Output: "); 
+    disp(u); 
+
+    disp("Error: "); 
+    disp(rad2deg(error));
+
+    disp("Integral: "); 
+    disp(wr.PID_integral);
+
+    disp("Derivative: "); 
+    disp(derivative);
+
+    disp("--------------------------------"); 
 
     % Assign output values. 
     % Equal control efforts on both sides for zero radius heading control. 
